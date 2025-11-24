@@ -3,6 +3,7 @@ import boto3
 # Shared test configuration
 REGION = "sa-east-1"
 SESSION_NAME = "pytest-assume-role"
+ROLE_NAME_ONLY_GLUE = "role-should-access-only-glue-kms"
 
 def assume_role(role_name: str):
     sts = boto3.client("sts", region_name=REGION)

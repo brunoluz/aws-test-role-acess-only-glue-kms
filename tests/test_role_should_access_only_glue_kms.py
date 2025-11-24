@@ -3,13 +3,14 @@ import botocore.exceptions
 import pytest
 import re
 import utils
-from .utils import REGION
+import base64
+from .utils import REGION, ROLE_NAME_ONLY_GLUE
 
-ROLE_NAME = "role-should-access-only-glue-kms"
+
 
 def test_assume_role_only_glue_and_get_glue_database():
 
-    creds, _ = utils.assume_role(ROLE_NAME)
+    creds, _ = utils.assume_role(ROLE_NAME_ONLY_GLUE)
 
     glue = boto3.client(
 		"glue",
@@ -26,7 +27,7 @@ def test_assume_role_only_glue_and_get_glue_database():
 
 def test_assume_role_only_glue_and_get_glue_table():
 
-    creds, _ = utils.assume_role(ROLE_NAME)
+    creds, _ = utils.assume_role(ROLE_NAME_ONLY_GLUE)
     
     glue = boto3.client(
 		"glue",
@@ -46,7 +47,7 @@ def test_assume_role_only_glue_and_get_glue_table():
 
 def test_assume_role_only_glue_and_s3_object_kms_denied():
 
-    creds, account = utils.assume_role(ROLE_NAME)
+    creds, account = utils.assume_role(ROLE_NAME_ONLY_GLUE)
     
     bucket = "brunoluz-teste-kms"
     key = "arquivo.txt"
@@ -87,7 +88,7 @@ def test_assume_role_only_glue_and_get_secret_manager_value():
     secret_id = "segredo_criptografado"
     expected_value = "segredo_sagrado"
 
-    creds, _ = utils.assume_role(ROLE_NAME)
+    creds, _ = utils.assume_role(ROLE_NAME_ONLY_GLUE)
 
     secrets = boto3.client(
         "secretsmanager",
@@ -107,3 +108,31 @@ def test_assume_role_only_glue_and_get_secret_manager_value():
 
     assert err_code == "AccessDeniedException"
     assert err_message == "Access to KMS is not allowed"
+
+# def test_assume_role_only_glue_encrypt_decrypt_kms():
+
+#     creds, _ = utils.assume_role(ROLE_NAME_ONLY_GLUE)
+#     secret_text = "Texto super secreto"
+
+#     kms_client = boto3.client(
+#         "kms",
+#         aws_access_key_id=creds["AccessKeyId"],
+#         aws_secret_access_key=creds["SecretAccessKey"],
+#         aws_session_token=creds["SessionToken"],
+#         region_name=REGION,
+#     )
+
+#     encrypt_response = kms_client.encrypt(
+#         KeyId="alias/kms-glue-catalog",
+#         Plaintext=secret_text,
+#     )
+
+#     encrypted_text = base64.b64encode(encrypt_response["CiphertextBlob"]).decode("utf-8")
+
+#     decrypt_response = kms_client.decrypt(
+#         CiphertextBlob=base64.b64decode(encrypted_text.encode("utf-8"))
+#     )
+
+#     decrypted_text = decrypt_response["Plaintext"].decode("utf-8")
+
+#     assert decrypted_text == secret_text

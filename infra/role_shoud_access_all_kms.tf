@@ -38,7 +38,9 @@ resource "aws_iam_role_policy" "role_should_access_all_kms_policy" {
         Sid    = "AllowKMSDecrypt"
         Effect = "Allow"
         Action = [
-          "kms:Decrypt"
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:GenerateDataKey"
         ]
         Resource = "*"
         Condition = {

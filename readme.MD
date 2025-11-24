@@ -2,20 +2,10 @@
 
 Este repositório contém exemplos Terraform (diretório `infra/`) e testes em Python (diretório `tests/`) para demonstrar um padrão de controle de acesso KMS. O objetivo principal é evidenciar que, usando a condição `kms:ViaService` com o valor `glue.sa-east-1.amazonaws.com`, é possível permitir que uma role só consiga descriptografar chaves KMS quando a chamada vier do serviço AWS Glue na região `sa-east-1`.
 
-**Recursos Terraform (diretório `infra/`)**
+**Evidências que serão coletadas**
 
-- `data.tf`: contém data sources usados pelo conjunto de recursos (por exemplo `aws_caller_identity`).
-- `glue.tf`: provê recursos relacionados ao AWS Glue (databases/tables usados nos testes).
-- `kms.tf`: cria chaves KMS e aliases (por exemplo o alias usado por Glue no exemplo).
-- `role_shoud_access_all_kms.tf`: define uma role e política que permite acesso KMS amplo (útil como referência/contraste).
-- `role_shoud_access_only_glue_kms.tf`: define a role `role-should-access-only-glue-kms` e uma política que restringe `kms:Decrypt` de forma que somente chamadas originadas pelo serviço Glue na região `sa-east-1` e que apontem para o alias KMS correto sejam permitidas. Esta política contém:
-  - Uma declaração `Allow` para `kms:Decrypt` com condições:
-    - `StringEquals` `kms:ViaService = "glue.sa-east-1.amazonaws.com"`
-    - `ForAnyValue:StringEquals` `kms:ResourceAliases = "${aws_kms_alias.kms_glue_catalog.name}"` (limita o alias)
-  - Declarações `Deny` explícitas para bloquear `kms:Decrypt` quando `kms:ViaService` não for `glue.sa-east-1.amazonaws.com` ou quando o alias não for o alias do Glue catalog.
-- `s3.tf`: contém o bucket/objeto S3 utilizado nos testes (objeto criptografado com a KMS key).
-- `secrets_manager.tf`: cria um segredo em Secrets Manager que está criptografado pela KMS key de teste.
-- `versions.tf`: define versões / provedores do Terraform.
+- role **role_shoud_access_only_glue_kms**: Deve conseguir decriptografar apenas a chave KMS de alias kms-glue-catalog e que a solicitação seja feita via serviços do Glue. 
+
 
 **Comportamento esperado da política KMS**
 
