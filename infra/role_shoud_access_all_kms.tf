@@ -1,5 +1,5 @@
-resource "aws_iam_role" "role_should_access_only_glue_kms" {
-  name = "role-should-access-only-glue-kms"
+resource "aws_iam_role" "role_should_access_all_kms" {
+  name = "role-should-access-all-kms"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -15,9 +15,9 @@ resource "aws_iam_role" "role_should_access_only_glue_kms" {
   })
 }
 
-resource "aws_iam_role_policy" "role_should_access_only_glue_kms_policy" {
-  name = "role-should-access-only-glue-kms-policy"
-  role = aws_iam_role.role_should_access_only_glue_kms.name
+resource "aws_iam_role_policy" "role_should_access_all_kms_policy" {
+  name = "role-should-access-all-kms-policy"
+  role = aws_iam_role.role_should_access_all_kms.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -42,24 +42,8 @@ resource "aws_iam_role_policy" "role_should_access_only_glue_kms_policy" {
         ]
         Resource = "*"
         Condition = {
-          StringEquals = {
-            "kms:ViaService" = "glue.${var.aws_region}.amazonaws.com"
-          }
           "ForAnyValue:StringEquals" = {
             "kms:ResourceAliases" = "${aws_kms_alias.kms_glue_catalog.name}"
-          }
-        }
-      },
-      {
-        Sid    = "AllowKMSDecryptOnlyForGlueService"
-        Effect = "Deny"
-        Action = [
-          "kms:Decrypt"
-        ]
-        Resource = "*"
-        Condition = {
-          StringNotEquals = {
-            "kms:ViaService" = "glue.${var.aws_region}.amazonaws.com"
           }
         }
       },

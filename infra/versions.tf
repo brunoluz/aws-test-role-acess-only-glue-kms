@@ -14,6 +14,6 @@ provider "aws" {
 }
 
 variable "aws_region" {
-  type = string
+  type    = string
   default = "sa-east-1"
 }
