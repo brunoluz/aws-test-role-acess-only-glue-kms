@@ -4,7 +4,7 @@ import pytest
 import re
 import utils
 import base64
-from .utils import REGION, ROLE_NAME_ONLY_GLUE
+from .utils import REGION, ROLE_NAME_ONLY_GLUE, ROLE_NAME_ALL_KMS
 
 
 
@@ -109,30 +109,45 @@ def test_assume_role_only_glue_and_get_secret_manager_value():
     assert err_code == "AccessDeniedException"
     assert err_message == "Access to KMS is not allowed"
 
-# def test_assume_role_only_glue_encrypt_decrypt_kms():
+def test_assume_role_only_glue_encrypt_decrypt_kms():
 
-#     creds, _ = utils.assume_role(ROLE_NAME_ONLY_GLUE)
-#     secret_text = "Texto super secreto"
+    creds_all_kms, _ = utils.assume_role(ROLE_NAME_ALL_KMS)
+    creds_only_glue, account = utils.assume_role(ROLE_NAME_ONLY_GLUE)
+    
+    secret_text = "Texto super secreto"
 
-#     kms_client = boto3.client(
-#         "kms",
-#         aws_access_key_id=creds["AccessKeyId"],
-#         aws_secret_access_key=creds["SecretAccessKey"],
-#         aws_session_token=creds["SessionToken"],
-#         region_name=REGION,
-#     )
+    kms_client_all_kms = boto3.client(
+        "kms",
+        aws_access_key_id=creds_all_kms["AccessKeyId"],
+        aws_secret_access_key=creds_all_kms["SecretAccessKey"],
+        aws_session_token=creds_all_kms["SessionToken"],
+        region_name=REGION,
+    )
 
-#     encrypt_response = kms_client.encrypt(
-#         KeyId="alias/kms-glue-catalog",
-#         Plaintext=secret_text,
-#     )
+    encrypt_response = kms_client_all_kms.encrypt(
+        KeyId="alias/kms-glue-catalog",
+        Plaintext=secret_text,
+    )
+    encrypted_text = base64.b64encode(encrypt_response["CiphertextBlob"]).decode("utf-8")
 
-#     encrypted_text = base64.b64encode(encrypt_response["CiphertextBlob"]).decode("utf-8")
-
-#     decrypt_response = kms_client.decrypt(
-#         CiphertextBlob=base64.b64decode(encrypted_text.encode("utf-8"))
-#     )
-
-#     decrypted_text = decrypt_response["Plaintext"].decode("utf-8")
-
-#     assert decrypted_text == secret_text
+    kms_client_only_glue = boto3.client(
+        "kms",
+        aws_access_key_id=creds_only_glue["AccessKeyId"],
+        aws_secret_access_key=creds_only_glue["SecretAccessKey"],
+        aws_session_token=creds_only_glue["SessionToken"],
+        region_name=REGION
+    )
+    
+    try:
+        decrypt_response = kms_client_only_glue.decrypt(
+           CiphertextBlob=base64.b64decode(encrypted_text.encode("utf-8"))
+        )
+    except botocore.exceptions.ClientError as exc:
+        err = exc.response.get("Error")
+        err_code = err.get("Code")
+        err_message = err.get("Message")
+        err_message_no_uuid = utils.substitute_uuid_in_string(err_message, "<UUID>")
+        
+        assert err_code == "AccessDeniedException"
+        assert err_message_no_uuid == f"User: arn:aws:sts::{account}:assumed-role/role-should-access-only-glue-kms/pytest-assume-role is not authorized to perform: kms:Decrypt on resource: arn:aws:kms:sa-east-1:960669553273:key/<UUID> with an explicit deny in an identity-based policy"
+    

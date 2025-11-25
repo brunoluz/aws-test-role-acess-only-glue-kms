@@ -18,4 +18,7 @@ resource "aws_s3_object" "arquivo_txt" {
   bucket  = aws_s3_bucket.brunoluz_teste_kms.id
   key     = "arquivo.txt"
   content = "brunoluz"
+
+  server_side_encryption = "aws:kms"
+  kms_key_id             = aws_kms_key.kms_glue_catalog.arn
 }

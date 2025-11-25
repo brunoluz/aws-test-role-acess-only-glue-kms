@@ -1,10 +1,10 @@
 import boto3
 import utils
 import base64
-from .utils import REGION
+from .utils import REGION, ROLE_NAME_ALL_KMS
 
 
-ROLE_NAME_ALL_KMS = "role-should-access-all-kms"
+
 
 def test_assume_role_all_kms_and_get_glue_database():
 
